@@ -7,6 +7,20 @@ from flask import Flask, Response, request, send_file, abort, jsonify
 with open("config.json") as f:
     config = json.load(f)
 
+lookupLists = dict()
+
+for lookupFileName in config["lookup_maintained"]:
+    lookupFileNameJSON = lookupFileName + ".json"
+    
+    if not os.path.exists(lookupFileNameJSON):
+        lookupLists[lookupFileName] = dict()
+        
+        for lookupConfig in config["lookup_maintained"][lookupFileName]:
+            lookupLists[lookupFileName][lookupConfig["prefix"]] = dict()
+    else:
+        with open(lookupFileNameJSON) as f:
+            lookupLists[lookupFileName] = json.load(f)
+
 def runCtp(inputFolder, outputFolder, filterScript=None, anonymizerScript=None, lookupTable=None, nThreads=1):
     os.makedirs(outputFolder, exist_ok=True)
 
@@ -68,8 +82,8 @@ def deidentifyDefaultRoute():
 def deidentifyCustomRoute(route):
     return jsonify(deidentify(route))
 
-def deidentify(configName):
-    currentConfig = config[configName]
+def deidentify(routeName):
+    currentConfig = config["routes"][routeName]
     
     inputFolder = currentConfig["inputFolder"]
     outputFolder = currentConfig["outputFolder"]
