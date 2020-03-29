@@ -91,7 +91,7 @@ def checkLookup(lookupListName, inputFolder):
     saveLookupList(lookupListName)
     
 def getheaderFirstFile(folderToLook):
-    for root, subdirs, files in os.walk(folderToLook):
+    for root, _, files in os.walk(folderToLook):
         for filename in files:
             if(filename.endswith(".dcm") or filename.endswith(".DCM")):
                 return pydicom.dcmread(os.path.join(root, filename))
@@ -134,7 +134,7 @@ def runCtp(inputFolder, outputFolder, filterScript=None, anonymizerScript=None, 
 def renameAndReturnFiles(outputFolder):
     newFileNames = list()
 
-    for root, subdirs, files in os.walk(outputFolder):
+    for root, _, files in os.walk(outputFolder):
         for filename in files:
             if(filename.endswith(".dcm") or filename.endswith(".DCM")):
                 currentFilePath = os.path.join(root, filename)
