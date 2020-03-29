@@ -1,6 +1,7 @@
 import subprocess
 import os
 import json
+import pydicom
 from flask import Flask, Response, request, send_file, abort, jsonify
 
 with open("config.json") as f:
@@ -36,6 +37,22 @@ def runCtp(inputFolder, outputFolder, filterScript=None, anonymizerScript=None, 
         if "!quarantine!" in line:
             errorLines.append(str(line))
     return errorLines
+
+def renameAndReturnFiles(outputFolder):
+    newFileNames = list()
+
+    for root, subdirs, files in os.walk(outputFolder):
+        for filename in files:
+            if(filename.endswith(".dcm") or filename.endswith(".DCM")):
+                currentFilePath = os.path.join(root, filename)
+                
+                dcmHeader = pydicom.dcmread(currentFilePath)
+                sopInstanceUid = dcmHeader[0x8,0x18].value
+                targetFilePath = os.path.join(root, sopInstanceUid + ".dcm")
+                os.rename(currentFilePath, targetFilePath)
+                newFileNames.append(targetFilePath)
+    
+    return newFileNames
 
 app = Flask('CTP Anonymizer Service')
 
@@ -75,7 +92,10 @@ def deidentify(configName):
         anonymizerScript=anonymizerScript,
         lookupTable=lookupTable,
         nThreads=nThreads)
-    
-    return ctpResult
+    deidentifiedFiles = renameAndReturnFiles(outputFolder)
+
+    return {
+        "ctpErrors": ctpResult,
+        "deidentifiedFiles": deidentifiedFiles}
 
 app.run(debug=True, host='0.0.0.0', port=80)
