@@ -12,12 +12,14 @@
     "lookup_maintained": {
         "/lookup.properties": [
             {
-                "dicomTag": "0x10,0x20",
-                "prefix": "ptid"
+                "dicomTag": "00100020",
+                "prefix": "ptid",
+                "numeric": false
             },
             {
-                "dicomTag": "0x8,0x50",
-                "prefix": "anr"
+                "dicomTag": "00080050",
+                "prefix": "anr",
+                "numeric": true
             }
         ]
     }

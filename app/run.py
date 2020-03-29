@@ -2,6 +2,8 @@ import subprocess
 import os
 import json
 import pydicom
+import random
+import string
 from flask import Flask, Response, request, send_file, abort, jsonify
 
 with open("config.json") as f:
@@ -21,8 +23,85 @@ for lookupFileName in config["lookup_maintained"]:
         with open(lookupFileNameJSON) as f:
             lookupLists[lookupFileName] = json.load(f)
 
+def randomString(stringLength=10):
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(stringLength))
+
+def generateUniqueId(lookupList, numericValue=False):
+    newId = randomString()
+    if numericValue:
+        newId = random.randrange(100000000, 999999999)
+    isUnique = False
+
+    while not isUnique:
+        foundInList = False
+        for newIds in lookupList.values():
+            if newIds==newId:
+                foundInList = True
+        
+        if not foundInList:
+            isUnique = True
+        else:
+            if numericValue:
+                newId = random.randrange(1000000, 9999999)
+            else:
+                newId = randomString()
+    
+    return newId
+
+def saveLookupList(lookupListName):
+    lookupListNameJSON = lookupListName + ".json"
+
+    lookupList = lookupLists[lookupListName]
+
+    with open(lookupListNameJSON, "w") as f:
+        json.dump(lookupList, f)
+    
+    with open(lookupListName, "w") as f:
+        for lookupConfig in config["lookup_maintained"][lookupFileName]:
+            prefix = lookupConfig["prefix"]
+            for keyValue in lookupList[prefix]:
+                outputString = "%s/%s=%s" % (prefix,keyValue,lookupList[prefix][keyValue])
+                f.write(outputString + os.linesep)
+
+
+def checkLookup(lookupListName, inputFolder):
+    if not lookupListName in config["lookup_maintained"]:
+        return
+    
+    dcmHeader = getheaderFirstFile(inputFolder)
+
+    lookupItems = config["lookup_maintained"][lookupListName]
+    lookupList = lookupLists[lookupListName]
+    for lookupItem in lookupItems:
+        prefixItem = lookupItem["prefix"]
+        dicomTagItem = lookupItem["dicomTag"]
+
+        curSubList = lookupList[prefixItem]
+        currentValue = dcmHeader[dicomTagItem].value
+        if currentValue in curSubList:
+            break #in this case, the current value is already in the lookup list as key
+        else:
+            newId = generateUniqueId(curSubList, numericValue=lookupItem["numeric"])
+            curSubList[currentValue] = newId
+        lookupFileNameJSON
+        lookupList[prefixItem] = curSubList
+    lookupLists[lookupListName] = lookupList
+
+    saveLookupList(lookupListName)
+    
+def getheaderFirstFile(folderToLook):
+    for root, subdirs, files in os.walk(folderToLook):
+        for filename in files:
+            if(filename.endswith(".dcm") or filename.endswith(".DCM")):
+                return pydicom.dcmread(os.path.join(root, filename))
+    
+    return None
+
 def runCtp(inputFolder, outputFolder, filterScript=None, anonymizerScript=None, lookupTable=None, nThreads=1):
     os.makedirs(outputFolder, exist_ok=True)
+
+    checkLookup(lookupTable, inputFolder)
 
     cmd = "java -jar DicomAnonymizerTool/DAT.jar -v "
     cmd += "-in %s " % inputFolder
