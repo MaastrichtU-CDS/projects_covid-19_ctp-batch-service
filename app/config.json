@@ -1,0 +1,10 @@
+{
+    "default": {
+        "inputFolder": "data/original",
+        "outputFolder": "data/deidentified",
+        "filterScript": "filter.script",
+        "anonymizerScript": "anonymizer.script",
+        "lookupTable": "lookup.properties",
+        "threads": 1
+    }
+}
