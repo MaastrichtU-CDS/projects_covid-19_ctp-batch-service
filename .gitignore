@@ -1,0 +1,6 @@
+data/
+DicomAnonymizerTool/
+anonymizer.script
+filter.script
+lookup.properties
+DicomAnonymizerTool-installer.jar
