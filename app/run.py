@@ -103,7 +103,7 @@ def runCtp(inputFolder, outputFolder, filterScript=None, anonymizerScript=None, 
 
     checkLookup(lookupTable, inputFolder)
 
-    cmd = "java -jar DicomAnonymizerTool/DAT.jar -v "
+    cmd = "cd DicomAnonymizerTool && java -jar DAT.jar -v "
     cmd += "-in %s " % inputFolder
     cmd += "-out %s " % outputFolder
     if not filterScript is None:
@@ -186,9 +186,9 @@ def deidentify(routeName):
         lookupTable=lookupTable,
         nThreads=nThreads)
     deidentifiedFiles = renameAndReturnFiles(outputFolder)
-    
-    os.system("chmod -R 777 %s" % outputFolder)
 
+    os.system("chmod -R 777 %s" % outputFolder)
+    
     return {
         "ctpErrors": ctpResult,
         "deidentifiedFiles": deidentifiedFiles}
