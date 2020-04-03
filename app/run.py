@@ -186,6 +186,8 @@ def deidentify(routeName):
         lookupTable=lookupTable,
         nThreads=nThreads)
     deidentifiedFiles = renameAndReturnFiles(outputFolder)
+    
+    os.system("chmod -R 777 %s" % outputFolder)
 
     return {
         "ctpErrors": ctpResult,
