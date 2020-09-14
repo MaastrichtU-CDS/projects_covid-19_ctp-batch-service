@@ -1,0 +1,21 @@
+{
+    "routes": {
+        "default": {
+            "inputFolder": "data/original",
+            "outputFolder": "data/deidentified",
+            "filterScript": "/filter.script",
+            "anonymizerScript": "/anonymizer.script",
+            "lookupTable": "/lookup.properties",
+            "threads": 1
+        }
+    },
+    "lookup_maintained": {
+        "/lookup.properties": [
+            {
+                "dicomTag": "00100020",
+                "prefix": "ptid",
+                "numeric": false
+            }
+        ]
+    }
+}

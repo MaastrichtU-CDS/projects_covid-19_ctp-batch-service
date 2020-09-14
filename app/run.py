@@ -4,6 +4,9 @@ import json
 import pydicom
 import random
 import string
+import tempfile
+import zipfile
+import io
 from flask import Flask, Response, request, send_file, abort, jsonify
 
 with open("config.json") as f:
@@ -155,11 +158,11 @@ def index():
 
 @app.route("/", methods=["POST"])
 def deidentifyDefaultRoute():
-    return jsonify(deidentify("default"))
+    return deidentify("default")
 
 @app.route("/<string:route>", methods=["POST"])
 def deidentifyCustomRoute(route):
-    return jsonify(deidentify(route))
+    return deidentify(route)
 
 def deidentify(routeName):
     currentConfig = config["routes"][routeName]
@@ -175,9 +178,41 @@ def deidentify(routeName):
 
     if contentType == "application/json":
         inputData = request.get_json()
+        return jsonify(deidentify_json_input(inputData, filterScript, anonymizerScript, lookupTable, nThreads))
+    if contentType == "application/zip":
+        tmpDirIn = tempfile.TemporaryDirectory()
+        tmpDirOut = tempfile.TemporaryDirectory()
+        zf = zipfile.ZipFile(io.BytesIO(request.get_data()))
+        zf.extractall(tmpDirIn.name)
+        return deidentify_folder_input(tmpDirIn.name, tmpDirOut.name, filterScript, anonymizerScript, lookupTable, nThreads)
 
-        inputFolder = inputData["inputFolder"]
-        outputFolder = inputData["outputFolder"]
+def deidentify_folder_input(inputFolderString, outputFolderString, filterScript, anonymizerScript, lookupTable, nThreads):
+    ctpResult = runCtp(inputFolderString, 
+        outputFolderString, 
+        filterScript=filterScript, 
+        anonymizerScript=anonymizerScript,
+        lookupTable=lookupTable,
+        nThreads=nThreads)
+    deidentifiedFiles = renameAndReturnFiles(outputFolderString)
+
+    fileName = tempfile.NamedTemporaryFile()
+    fileZip = zipfile.ZipFile(fileName, 'w', zipfile.ZIP_DEFLATED)
+
+    print("files {} found".format(len(deidentifiedFiles)))
+
+    for myFile in deidentifiedFiles:
+        fileBase = os.path.basename(myFile)
+        try:
+            fileZip.write(myFile, fileBase)
+        except:
+            print("Could not find file: " + myFile)
+
+    fileZip.close()
+    return send_file(fileName.name, mimetype='application/zip')
+
+def deidentify_json_input(inputData, filterScript, anonymizerScript, lookupTable, nThreads):
+    inputFolder = inputData["inputFolder"]
+    outputFolder = inputData["outputFolder"]
 
     ctpResult = runCtp(inputFolder, 
         outputFolder, 
