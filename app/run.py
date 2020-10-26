@@ -2,6 +2,7 @@ import subprocess
 import os
 import json
 import pydicom
+from pydicomtools.DicomDatabase import PatientDatabase, Patient, Series
 import random
 import string
 import tempfile
@@ -72,34 +73,48 @@ def checkLookup(lookupListName, inputFolder):
     if not lookupListName in config["lookup_maintained"]:
         return
     
-    dcmHeader = getheaderFirstFile(inputFolder)
+    dcmHeaders = getHeadersFromSeries(inputFolder)
 
-    lookupItems = config["lookup_maintained"][lookupListName]
-    lookupList = lookupLists[lookupListName]
-    for lookupItem in lookupItems:
-        prefixItem = lookupItem["prefix"]
-        dicomTagItem = lookupItem["dicomTag"]
+    for dcmHeader in dcmHeaders:
+        lookupItems = config["lookup_maintained"][lookupListName]
+        lookupList = lookupLists[lookupListName]
+        for lookupItem in lookupItems:
+            prefixItem = lookupItem["prefix"]
+            dicomTagItem = lookupItem["dicomTag"]
 
-        curSubList = lookupList[prefixItem]
-        currentValue = dcmHeader[dicomTagItem].value
-        if currentValue in curSubList:
-            break #in this case, the current value is already in the lookup list as key
-        else:
-            newId = generateUniqueId(curSubList, numericValue=lookupItem["numeric"])
-            curSubList[currentValue] = newId
-        lookupFileNameJSON
-        lookupList[prefixItem] = curSubList
-    lookupLists[lookupListName] = lookupList
+            curSubList = lookupList[prefixItem]
+            currentValue = "DoesNotExist"
+            if dcmHeader[dicomTagItem] is not None:
+                currentValue = dcmHeader[dicomTagItem].value
+            else:
+                print(f"Warning, Tag {dicomTagItem} does not always exist.")
+                break
+                
+            if currentValue in curSubList:
+                break #in this case, the current value is already in the lookup list as key
+            else:
+                newId = generateUniqueId(curSubList, numericValue=lookupItem["numeric"])
+                curSubList[currentValue] = newId
+            lookupFileNameJSON
+            lookupList[prefixItem] = curSubList
+        lookupLists[lookupListName] = lookupList
 
     saveLookupList(lookupListName)
     
-def getheaderFirstFile(folderToLook):
-    for root, _, files in os.walk(folderToLook):
-        for filename in files:
-            if(filename.endswith(".dcm") or filename.endswith(".DCM")):
-                return pydicom.dcmread(os.path.join(root, filename))
+def getHeadersFromSeries(folderToLook):
+    headers = [ ]
     
-    return None
+    patientDb = PatientDatabase()
+    patientDb.parseFolder(folderToLook)
+
+    for ptId in patientDb.patient:
+        curPatient = patientDb.patient[ptId]
+        for seriesUid in curPatient.series:
+            filePaths = list(curPatient.series[seriesUid].filePath.values())
+            dcmHeader = pydicom.dcmread(filePaths[0])
+            headers.append(dcmHeader)
+
+    return headers
 
 def runCtp(inputFolder, outputFolder, filterScript=None, anonymizerScript=None, lookupTable=None, nThreads=1):
     os.makedirs(outputFolder, exist_ok=True)
