@@ -87,7 +87,7 @@ def checkLookup(lookupListName, inputFolder):
             if dcmHeader[dicomTagItem] is not None:
                 currentValue = dcmHeader[dicomTagItem].value
             else:
-                print(f"Warning, Tag {dicomTagItem} does not always exist.")
+                print("Warning, Tag %s does not always exist." % dicomTagItem)
                 break
                 
             if currentValue in curSubList:
