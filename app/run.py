@@ -208,17 +208,24 @@ def deidentify_folder_input(inputFolderString, outputFolderString, filterScript,
         anonymizerScript=anonymizerScript,
         lookupTable=lookupTable,
         nThreads=nThreads)
-    deidentifiedFiles = renameAndReturnFiles(outputFolderString)
+    
+    deidentifiedFiles = dict()
+    patientDb = PatientDatabase()
+    patientDb.parseFolder(outputFolderString)
+
+    for patient in patientDb.patient.values():
+        for serie in patient.series.values():
+            deidentifiedFiles.update(serie.filePath)
 
     fileName = tempfile.NamedTemporaryFile()
     fileZip = zipfile.ZipFile(fileName, 'w', zipfile.ZIP_DEFLATED)
 
-    print("files {} found".format(len(deidentifiedFiles)))
+    print("{} files found after deidentification".format(len(deidentifiedFiles)))
 
-    for myFile in deidentifiedFiles:
-        fileBase = os.path.basename(myFile)
+    for myFileUid in deidentifiedFiles:
+        myFile = deidentifiedFiles[myFileUid]
         try:
-            fileZip.write(myFile, fileBase)
+            fileZip.write(myFile, myFileUid)
         except:
             print("Could not find file: " + myFile)
 
