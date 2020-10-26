@@ -1,4 +1,4 @@
-FROM openjdk:8-stretch
+FROM openjdk:8-buster
 
 RUN apt update && apt install -y unzip python3 python3-pip python3-dev git
 
@@ -6,7 +6,7 @@ RUN apt update && apt install -y unzip python3 python3-pip python3-dev git
 RUN python -m pip install --upgrade pip setuptools wheel
 
 RUN git clone https://gitlab.com/UM-CDS/general-tools/pydicomtools.git
-RUN pip install -e /pydicomtools
+RUN pip3 install -e /pydicomtools
 ################# Install ImageIO java libraries
 
 
