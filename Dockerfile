@@ -1,12 +1,12 @@
 FROM openjdk:8-buster
 
-RUN apt update && apt install -y unzip python3 python3-pip python3-dev git
+RUN apt update && apt install -y unzip python3.7 python3-pip python3-dev git
 
 ################# Install pydicomtools from source repository
-RUN python -m pip install --upgrade pip setuptools wheel
+RUN python3 -m pip install --upgrade pip setuptools wheel
 
 RUN git clone https://gitlab.com/UM-CDS/general-tools/pydicomtools.git
-RUN pip3 install -e /pydicomtools
+RUN python3 -m pip install -e /pydicomtools
 ################# Install ImageIO java libraries
 
 
@@ -23,7 +23,7 @@ RUN cp linux-x86_64/libclib_jiio.so $JAVA_HOME/jre/i386
 
 ADD ./app /app
 WORKDIR /app
-RUN pip3 install -r requirements.txt
+RUN python3 -m pip install -r requirements.txt
 
 
 ################# Install CTP
